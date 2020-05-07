@@ -31,7 +31,7 @@ WORKDIR /home/app/web
 # Install dependencies
 COPY --from=build /usr/src/app/wheels /wheels
 COPY --from=build /usr/src/app/requirements.txt .
-RUN pip install --upgrade pip && pip install --no-cache /wheels/*
+RUN apk add postgresql-libs && pip install --upgrade pip && pip install --no-cache /wheels/*
 
 # Copy application
 COPY --chown=app:app . /home/app/web
