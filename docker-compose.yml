@@ -78,4 +78,5 @@ volumes:
 
 networks:
   proxy-public:
+    name: proxy-public
   backend:
