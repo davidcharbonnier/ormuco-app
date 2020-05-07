@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="columns is-desktop">
+  <div class="column"></div>
+  <div class="column is-half-desktop">
+    <h2 class="is-size-3">Preference</h2>
+
+    <form method="post" action="{{ url_for('preference') }}">
+      <div class="field">
+        <label class="label" for="name">Name</label>
+        <div class="control">
+          <input name="name" value="{{ request.form['name'] }}" class="input" required></input>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="color">Favorite Color</label>
+        <div class="control">
+          <input name="color" value="{{ request.form['color'] }}" class="input" required></input>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="animal">Cats or Dogs</label>
+        <div class="control">
+          <div class="select">
+            <select name="animal">
+              {% for animal in animals %}
+              <option value="{{ animal.name }}" {% if animal.name == request.form['animal'] %} selected {% endif %}>{{ animal.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="control">
+          <input type="submit" value="Save" class="button is-link" />
+        </div>
+      </div>
+    </form>
+  </div>
+  <div class="column"></div>
+</div>
+
+{% endblock %}

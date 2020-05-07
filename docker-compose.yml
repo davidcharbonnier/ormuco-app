@@ -1,0 +1,81 @@
+version: '3.7'
+
+services:
+  db:
+    image: postgres:12.2-alpine
+    restart: always
+    volumes:
+      - db:/var/lib/postgresql/data:rw
+    env_file:
+      - .env.db
+    networks:
+      - backend
+
+  web:
+    build: ./web
+    command: gunicorn --bind 0.0.0.0:5000 --access-logfile - --error-logfile - manage:app
+    restart: always
+    env_file:
+      - .env.prod
+    depends_on:
+      - db
+    networks:
+      - backend
+      - proxy-public
+    labels:
+      # Enable Traefik proxy to expose Ormuco test
+      - "traefik.enable=true"
+      - "traefik.http.routers.ormuco.rule=Host(`ormuco.davidcharbonnier.fr`)"
+      - "traefik.http.routers.ormuco.entrypoints=websecure"
+      - "traefik.http.routers.ormuco.tls.certresolver=letsencrypt"
+
+  proxy:
+    image: "traefik:v2.2"
+    restart: always
+    command:
+      # Enable API/dashboard
+      - "--api=false"
+      - "--api.dashboard=false"
+      # Set logging level
+      - "--log.level=INFO"
+      # Docker provider settings
+      - "--providers.docker=true"
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=proxy-public"
+      # Entrypoint for HTTP trafic
+      - "--entrypoints.web.address=:80"
+      # Entrypoint for HTTPS trafic
+      - "--entrypoints.websecure.address=:443"
+      # Letsencrypt PROD settings
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=contact@davidcharbonnier.fr"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      # TLS options
+      - "--providers.file.directory=/etc/traefik/dyn"
+      # Log HTTP/S requests
+      - "--accesslog=true"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certs:/letsencrypt:rw
+      - ./proxy/conf/tls.yml:/etc/traefik/dyn/tls.yml:ro
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - proxy-public
+    labels:
+      # Redirect all HTTP trafic to HTTPS
+      - "traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)"
+      - "traefik.http.routers.http-catchall.entrypoints=web"
+      - "traefik.http.routers.http-catchall.middlewares=redirect-to-https@docker"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+volumes:
+  db:
+  certs:
+
+networks:
+  proxy-public:
+  backend:
