@@ -28,7 +28,7 @@
           <div class="select">
             <select name="animal">
               {% for animal in animals %}
-              <option value="{{ animal.name }}" {% if animal.name == request.form['animal'] %} selected {% endif %}>{{ animal.name }}</option>
+              <option value="{{ animal }}" {% if animal == request.form['animal'] %} selected {% endif %}>{{ animal }}</option>
               {% endfor %}
             </select>
           </div>
