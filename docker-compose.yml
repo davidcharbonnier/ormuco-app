@@ -40,7 +40,7 @@ services:
       - "--log.level=INFO"
       # Docker provider settings
       - "--providers.docker=true"
-      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--providers.docker.endpoint=tcp://docker-proxy:2375"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=proxy-public"
       # Entrypoint for HTTP trafic
@@ -62,20 +62,32 @@ services:
     volumes:
       - certs:/letsencrypt:rw
       - ./proxy/conf/tls.yml:/etc/traefik/dyn/tls.yml:ro
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
       - proxy-public
+      - docker-proxy
     labels:
       # Redirect all HTTP trafic to HTTPS
+      - "traefik.enable=true"
       - "traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)"
       - "traefik.http.routers.http-catchall.entrypoints=web"
       - "traefik.http.routers.http-catchall.middlewares=redirect-to-https@docker"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy
+    environment:
+      - CONTAINERS=1
+    networks:
+      - docker-proxy
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
 volumes:
   db:
   certs:
 
 networks:
+  docker-proxy:
   proxy-public:
+    name: proxy-public
   backend:
