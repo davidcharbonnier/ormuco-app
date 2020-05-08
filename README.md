@@ -1,5 +1,7 @@
 # ormuco-test
 
+This python application follows PEP8 codestyle conventions
+
 ## prerequisites
 
 ## install dependencies
